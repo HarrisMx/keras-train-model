@@ -48,7 +48,7 @@ labels = []
 imagePaths = sorted(list(paths.list_images(args["dataset"])))
 random.seed(42)
 random.shuffle(imagePaths)
- 
+
 # loop over the input images
 for imagePath in imagePaths:
 	# load the image, resize the image to be 224x224 pixels (ignoring
@@ -57,7 +57,7 @@ for imagePath in imagePaths:
     
     try:
         image = cv2.imread(imagePath)
-        image = cv2.resize(image, (200, 200)).flatten()
+        image = cv2.resize(image, (32, 32), interpolation = cv2.INTER_CUBIC).flatten()
         data.append(image)
 
     except Exception as e:
@@ -67,6 +67,7 @@ for imagePath in imagePaths:
 	# labels list
     label = imagePath.split(os.path.sep)[-2]
     labels.append(label)
+    
 
 
 # scale the raw pixel intensities to the range [0, 1]
@@ -76,6 +77,10 @@ labels = np.array(labels)
 
 # partition the data into training and testing splits using 75% of
 # the data for training and the remaining 25% for testing
+'''
+data = data.reshape(data.shape[1:])
+data = data.transpose()
+'''
 (trainX, testX, trainY, testY) = train_test_split(data,labels, test_size=0.25, random_state=42)
 
 
@@ -89,10 +94,9 @@ testY = lb.transform(testY)
 
 # define the 3072-1024-512-3 architecture using Keras
 model = Sequential()
-model.add(Dense(1024, input_shape=(120000,), activation="sigmoid"))
+model.add(Dense(1024, input_shape=(3072,), activation="sigmoid"))
 model.add(Dense(512, activation="sigmoid"))
 model.add(Dense(len(lb.classes_), activation="softmax"))
-
 
 # initialize our initial learning rate and # of epochs to train for
 INIT_LR = 0.01
@@ -107,7 +111,7 @@ model.compile(loss="categorical_crossentropy", optimizer=opt,metrics=["accuracy"
 
 # train the neural network
 H = model.fit(trainX, trainY, validation_data=(testX, testY),
-	epochs=EPOCHS, batch_size=32)
+	epochs=EPOCHS, batch_size=32,verbose=2)
 
 # evaluate the network
 print("[INFO] evaluating network...")
@@ -129,4 +133,12 @@ plt.ylabel("Loss/Accuracy")
 plt.legend()
 plt.savefig(args["plot"])
 
-print("Hello")
+
+# save the model and label binarizer to disk
+print("[INFO] serializing network and label binarizer...")
+model.save(args["model"])
+f = open(args["label_bin"], "wb")
+f.write(pickle.dumps(lb))
+f.close()
+
+print("Done")
