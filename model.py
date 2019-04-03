@@ -5,7 +5,7 @@ Created on Fri Mar 29 09:58:17 2019
 
 @author: Mxolisi
 """
-# set the matplotlib backend so figures can be saved in the background
+
 import matplotlib
 matplotlib.use("Agg")
  
