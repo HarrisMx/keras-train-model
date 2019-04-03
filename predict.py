@@ -39,6 +39,7 @@ image = image.astype("float") / 255.0
 
 # check to see if we should flatten the image and add a batch
 # dimension
+
 if args["flatten"] > 0:
 	image = image.flatten()
 	image = image.reshape((1, image.shape[0]))
@@ -56,11 +57,15 @@ lb = pickle.loads(open(args["label_bin"], "rb").read())
  
 # make a prediction on the image
 preds = model.predict(image)
- 
+
+
+for i in range(len(preds[0])):
+    print("{}: {:.2f}%".format(lb.classes_[i], preds[0][i]*100))
+
 # find the class label index with the largest corresponding
 # probability
 i = preds.argmax(axis=1)[0]
-label = lb.classes_[i]
+label = lb.classes_[1]
 
 
 # draw the class label + probability on the output image

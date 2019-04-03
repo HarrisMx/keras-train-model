@@ -5,7 +5,7 @@ Created on Fri Mar 29 09:58:17 2019
 
 @author: Mxolisi
 """
-
+# set the matplotlib backend so figures can be saved in the background
 import matplotlib
 matplotlib.use("Agg")
  
@@ -35,6 +35,7 @@ HEIGHT = 32
 WIDTH = 32
 BATCH_SIZE = 30
 TRAIN_DIR = "/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset/"
+
 '''
     Declarations End
 '''
@@ -85,20 +86,24 @@ for imagePath in imagePaths:
 data = np.array(data, dtype="float") / 255.0
 labels = np.array(labels)
 
-
 # partition the data into training and testing splits using 75% of
 # the data for training and the remaining 25% for testing
+
 '''
 data = data.reshape(data.shape[1:])
 data = data.transpose()
 '''
-(trainX, testX, trainY, testY) = train_test_split(data,labels, test_size=0.25, random_state=42)
 
+print(data.shape)
+print(labels.shape)
+
+(trainX, testX, trainY, testY) = train_test_split(data,labels, test_size=0.25, random_state=42)
 
 # convert the labels from integers to vectors (for 2-class, binary
 # classification you should use Keras' to_categorical function
 # instead as the scikit-learn's LabelBinarizer will not return a
 # vector)
+
 lb = LabelBinarizer()
 trainY = lb.fit_transform(trainY)
 testY = lb.transform(testY)
@@ -121,65 +126,30 @@ opt = SGD(lr=INIT_LR)
 model.compile(loss="categorical_crossentropy", optimizer=opt,metrics=["accuracy"])
 
 
-def build_finetune_model(base_model, dropout, fc_layers, num_classes):
-    for layer in base_model.layers:
-        layer.trainable = False
-
-    x = base_model.output
-    x = Flatten()(x)
-    for fc in fc_layers:
-        # New FC layer, random init
-        x = Dense(fc, activation='relu')(x)
-        x = Dropout(dropout)(x)
-        # train the neural network
-        H = model.fit(trainX, trainY, validation_data=(testX, testY),
-                      chs=EPOCHS, batch_size=32,verbose=2)
-        
-        # plot the training loss and accuracy
-        N = np.arange(0, EPOCHS)
-        plt.style.use("ggplot")
-        plt.figure()
-        plt.plot(N, H.history["loss"], label="train_loss")
-        plt.plot(N, H.history["val_loss"], label="val_loss")
-        plt.plot(N, H.history["acc"], label="train_acc")
-        plt.plot(N, H.history["val_acc"], label="val_acc")
-        plt.title("Training Loss and Accuracy (Simple NN)")
-        plt.xlabel("Epoch #")
-        plt.ylabel("Loss/Accuracy")
-        plt.legend()
-        plt.savefig(args["plot"])
-        
-        model.save_weights("model.hdf5", overwrite=True)
-    # New softmax layer
-    predictions = Dense(num_classes, activation='softmax')(x) 
-    
-    finetune_model = Model(inputs=base_model.input, outputs=predictions)
-
-    return finetune_model
-
-
 '''
     Here is the code that loads the previous weights and train a new model.
 '''
 
-base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(HEIGHT, WIDTH, 3))
-train_datagen =  ImageDataGenerator(preprocessing_function=preprocess_input,rotation_range=90,horizontal_flip=True,vertical_flip=True)
+# train the neural network
+H = model.fit(trainX, trainY, validation_data=(testX, testY),epochs=EPOCHS, batch_size=64)
 
-train_generator = train_datagen.flow_from_directory(TRAIN_DIR, target_size=(HEIGHT, WIDTH), batch_size=BATCH_SIZE)
+# plot the training loss and accuracy
 
-class_list = []
+N = np.arange(0, EPOCHS)
+plt.style.use("ggplot")
+plt.figure()
+plt.plot(N, H.history["loss"], label="train_loss")
+plt.plot(N, H.history["val_loss"], label="val_loss")
+plt.plot(N, H.history["acc"], label="train_acc")
+plt.plot(N, H.history["val_acc"], label="val_acc")
+plt.title("Training Loss and Accuracy (Simple NN)")
+plt.xlabel("Epoch #")
+plt.ylabel("Loss/Accuracy")
+plt.legend()
+plt.savefig(args["plot"])
 
-for subdir, dirs, files in os.walk(TRAIN_DIR):
-    class_name = subdir.split(os.path.sep)[-1]
-    if class_name is not TRAIN_DIR.split(os.path.sep)[-1]:
-        class_list.append(class_name)
+model.save_weights("model/model.hdf5", overwrite=True)
 
-
-
-FC_LAYERS = model.layers
-dropout = 0.5
-
-build_finetune_model(base_model, dropout=dropout, fc_layers=FC_LAYERS, num_classes=len(class_list))
 
 # evaluate the network
 print("[INFO] evaluating network...")
@@ -187,7 +157,6 @@ predictions = model.predict(testX, batch_size=32)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=lb.classes_))
  
-
 
 
 # save the model and label binarizer to disk
