@@ -10,8 +10,6 @@ from tensorflow.python.keras.applications.vgg16 import preprocess_input, decode_
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.python.keras.optimizers import Adam, RMSprop
 
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
 def path_join(dirname, filenames):
     return [os.path.join(dirname, filename) for filename in filenames]
 
@@ -150,7 +148,7 @@ def load_images(image_paths):
 def plot_training_history(history):
     # Get the classification accuracy and loss-value
     # for the training-set.
-
+    
     acc = history.history['acc']
     loss = history.history['loss']
 
@@ -196,16 +194,19 @@ datagen_train = ImageDataGenerator(
 
 datagen_test = ImageDataGenerator(rescale=1./255)
 
+
+
+
 batch_size = 20
 
 
 if True:
     save_to_dir = None
 else:
-    save_to_dir='/Volumes/GTECH_4TB/saved_output'
+    save_to_dir='/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset'
 
-train_dir = '/Volumes/GTECH_4TB/new_test_data'
-test_dir = '/Volumes/GTECH_4TB/new_test_data'
+train_dir = '/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset'
+test_dir = '/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset'
 
 generator_train = datagen_train.flow_from_directory(directory=train_dir,
                                                     target_size=input_shape,
@@ -221,7 +222,6 @@ generator_test = datagen_test.flow_from_directory(directory=test_dir,
 
 
 steps_test = generator_test.n / batch_size
-
 
 
 image_paths_train = path_join(train_dir, generator_train.filenames)
@@ -276,7 +276,6 @@ def predict(image_path):
     # This outputs an array with 1000 numbers corresponding to
     # the classes of the ImageNet-dataset.
     pred = model.predict(img_array)
-
 
     # Decode the output of the VGG16 model.
     pred_decoded = decode_predictions(pred)[0]
@@ -359,7 +358,9 @@ history = new_model.fit_generator(generator=generator_train,
                                   validation_data=generator_test,
                                   validation_steps=steps_test)
 
+
 #plot_training_history(history)
+
 
 result = new_model.evaluate_generator(generator_test, steps=steps_test)
 
@@ -379,9 +380,7 @@ for layer in conv_model.layers:
 
 print_layer_trainable()
 
-
 optimizer_fine = Adam(lr=1e-7)
-
 
 new_model.compile(optimizer=optimizer_fine, loss=loss, metrics=metrics)
 
@@ -401,5 +400,5 @@ result = new_model.evaluate_generator(generator_test, steps=steps_test)
 
 
 #print("Test-set classification accuracy: {0:.2%}".format(result[1]))
-model.save("/Volumes/GTECH_4TB/saved_output/model.h5")
+model.save("/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset/firsttry.h5")
 example_errors()

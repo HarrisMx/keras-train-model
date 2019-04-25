@@ -1,9 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr  4 13:18:42 2019
+
+@author: Mxolisi
+"""
 from tensorflow.python.keras.applications.vgg16 import preprocess_input, decode_predictions
 from keras.models import load_model
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import PIL
+from dicttoxml import dicttoxml
+import xmltodict
 
 '''
 # construct the argument parser and parse the arguments
@@ -23,22 +32,28 @@ ap.add_argument("-f", "--flatten", type=int, default=-1,
 args = vars(ap.parse_args())
 '''
 
-img_rows = 150
-img_cols = 150
-
-model = load_model('/Volumes/GTECH_4TB/saved_output/model.h5')
+model = load_model('/Users/Mxolisi/Documents/DevProjects/redone/vgg16/firsttry.h5')
 input_shape = model.layers[0].output_shape[1:3]
+array = []
+
+def appendXml(data):
+    
+    xml = dicttoxml(array, custom_root='prediction', attr_type=False)
+    wfile = open('predicted.xml','w')
+    wfile.write(str(xml))
+    wfile.close()
+    print("**** Output data written to XML file ****")
+
 
 def predict(image_path):
     # Load and resize the image using PIL.
-    
     img = PIL.Image.open(image_path)
     img_resized = img.resize(input_shape, PIL.Image.LANCZOS)
-    
+
     # Plot the image.
     plt.imshow(img_resized)
     plt.show()
-    
+
     # Convert the PIL image to a numpy-array with the proper shape.
     img_array = np.expand_dims(np.array(img_resized), axis=0)
 
@@ -49,9 +64,28 @@ def predict(image_path):
 
     # Decode the output of the VGG16 model.
     pred_decoded = decode_predictions(pred)[0]
-
+    
+    pred_name = ''
+    pred_score = 0
+    count = 0
     # Print the predictions.
     for code, name, score in pred_decoded:
         print("{0:>6.2%} : {1}".format(score, name))
-
-predict('/Volumes/GTECH_4TB/test.png')
+        if(count == 0):
+            pred_name = name
+            pred_score = "{0:>6.2%}".format(score)
+        count = count + 1
+        
+    img_name = image_path.split('/')[-1]
+    data = {
+                'Image_name': img_name,
+                'class_name': pred_name,
+                'score': pred_score
+            }
+    
+    array.append(data)
+    
+    appendXml(array)
+    
+predict('/Users/Mxolisi/Documents/DevProjects/redone/animals_dataset/pour/OMO’s New Ultimate Laundry Liquid06_11.jpg')
+#model.summary()
